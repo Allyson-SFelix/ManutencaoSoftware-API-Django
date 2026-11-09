@@ -1,3 +1,6 @@
+from datetime import date
+
+from django.core.exceptions import ValidationError
 from django.db import models
 
 
@@ -50,6 +53,19 @@ class Tarefa(models.Model):
     class Meta:
         verbose_name = "Tarefa"
         verbose_name_plural = "Tarefas"
+
+    def clean(self):
+        super().clean()
+
+        if self.prazo_entrega is not None and self.prazo_entrega < date.today():
+            raise ValidationError({"prazo_entrega": "O prazo de entrega não pode estar no passado."})
+
+        if self.projeto_id is not None and self.projeto.status == "Concluído":
+            raise ValidationError({"projeto": "Não é possível associar uma tarefa a um projeto concluído."})
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.titulo} ({self.projeto.titulo})"
