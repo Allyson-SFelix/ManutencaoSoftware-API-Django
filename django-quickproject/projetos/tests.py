@@ -85,6 +85,29 @@ class ProjetoETarefaAPITests(APITestCase):
         self.assertEqual(resposta_exclusao.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Tarefa.objects.filter(pk=tarefa.id).exists())
 
+        resposta_atualizacao_projeto = self.client.patch(
+            reverse("projeto-detail", args=[projeto.id]),
+            {"titulo": "Projeto atualizado"},
+            format="json",
+        )
+        self.assertEqual(
+            resposta_atualizacao_projeto.status_code,
+            status.HTTP_200_OK,
+        )
+        self.assertEqual(
+            resposta_atualizacao_projeto.data["titulo"],
+            "Projeto atualizado",
+        )
+
+        resposta_exclusao_projeto = self.client.delete(
+            reverse("projeto-detail", args=[projeto.id])
+        )
+        self.assertEqual(
+            resposta_exclusao_projeto.status_code,
+            status.HTTP_204_NO_CONTENT,
+        )
+        self.assertFalse(Projeto.objects.filter(pk=projeto.id).exists())
+
     def test_regras_de_negocio(self):
         projeto = self.criar_projeto()
         projeto_concluido = self.criar_projeto(
@@ -126,6 +149,20 @@ class ProjetoETarefaAPITests(APITestCase):
         )
 
         tarefa = self.criar_tarefa(projeto)
+        resposta_prazo_passado_atualizacao = self.client.patch(
+            reverse("tarefa-detail", args=[tarefa.id]),
+            {
+                "prazo_entrega": (
+                    date.today() - timedelta(days=1)
+                ).isoformat()
+            },
+            format="json",
+        )
+        self.assertEqual(
+            resposta_prazo_passado_atualizacao.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
         resposta_alteracao_projeto = self.client.patch(
             reverse("tarefa-detail", args=[tarefa.id]),
             {"projeto": projeto_concluido.id},
